@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+<title>Code Converter</title>
+<style type="text/css">
+.board{
+    white-space: pre;
+}
+
+.main{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.main .box{
+  border:6px solid #eeeeee;
+  border-radius:5px;
+  margin:50px 0;
+  padding:10px;
+  max-width:600px;
+}
+
+.main .box textarea{
+  outline:none;
+  font-size:1.5rem;
+  padding:20px;
+  width:100%;
+}
+
+.main .box button{
+  width:100%;
+  height:50px;
+  margin:10px 0;
+  font-size:1.2rem;
+  text-transform:uppercase;
+  border:none;
+  color:#fff;
+  background:#0f4773;
+}
+</style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#" style="color:#0f4773;" >Code Converter</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="#">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link btn btn-outline-success" href="../../file.asm" download>Download</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<section class="main container">
+     <div class="box" >
+          <textarea id="text" rows="10" cols="40" ></textarea><br>
+          <div class="board" ></div>
+          <button onclick="change()">change</button>
+     </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+<script type="text/javascript">
+let text = document.getElementById("text")
+//let btn = document.getElementById("btn")
+let div = document.querySelector(".board")
+let data = ""
+let data4 = ""
+let head = `
+.model small
+.stack 100h 
+.data
+.code
+main proc
+
+`
+let end = `
+
+add bl , 48
+mov dl, bl
+mov ah , 2
+int 21h 
+mov ah,4ch
+int 21h
+main endp
+end main
+`
+
+
+
+function change(){
+    let variIndex = text.value.indexOf('=') 
+    let data1 = text.value
+    
+    for(let i = 0;i < 2; i++){
+       if(div.innerHTML.includes("bl")){
+           variIndex = div.innerHTML.indexOf('=') 
+           let data2 = div.innerHTML.substring(0, variIndex - 2) + 'cl' + div.innerHTML.substring(variIndex - 1);
+           div.innerHTML = data2
+       }
+       else{
+           data1 = data1.replace(data1[variIndex - 2], 'bl').replace("let", 'mov').replace("=", ',')
+           div.innerHTML = data1
+           text.value = ""
+       }
+    }
+
+  data = div.innerText.replace(/let/g, 'mov').replace(/=/g, ',')
+  
+  if(data.includes("+")){
+    let plus = data.indexOf('+')
+    let line = data[plus - 2] + " " + data[plus] + " " + data[plus + 2]
+    data4 = data.replace(line , "add bl , cl")
+  }
+  else if(data.includes("-")){
+    let plus = data.indexOf('-')
+    let line = data[plus - 2] + " " + data[plus] + " " + data[plus + 2]
+    data4 = data.replace(line , "sub bl , cl")
+  }
+  else if(data.includes("/")){
+    let plus = data.indexOf('/')
+    let line = data[plus - 2] + " " + data[plus] + " " + data[plus + 2]
+    data4 = data.replace(line , "div bl , cl")
+  }
+  else if(data.includes("*")){
+    let plus = data.indexOf('*')
+    let line = data[plus - 2] + " " + data[plus] + " " + data[plus + 2]
+    data4 = data.replace(line , "mul bl , cl")
+  }
+  div.innerText =head + data4 + end
+  
+  let program = head + data4 + end
+  
+  let obj = {
+      data : program
+  }
+  
+  fetch("/" , {
+     method: 'POST',
+     headers:{
+         'Content-Type': 'application/json'
+     },
+     body: JSON.stringify(obj),
+  })
+  .then(res => res.json())
+  .then(data => {})
+  .catch(error => {
+      console.log(error);
+  });
+  
+}
+
+
+
+</script>
+</body>
+</html>
